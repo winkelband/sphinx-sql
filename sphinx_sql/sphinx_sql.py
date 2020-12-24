@@ -30,9 +30,9 @@ class SqlDirective(Directive):
         # Match Group 1 for Object Type, Group 3 for Object Name
         # in cluster and catalog objects (e.g. database, role; extension, schema)
         'object_cluster_catalog': '(?<=create)\s+(\w+)\s*(IF NOT EXISTS)*\s?(\w+)',
-        # Match Group 1 for Object Type, Group 3 for Object Name
+        # Match Group 2 for Object Type, Group 4 for Object Name
         # in schema objects (e.g. table, view, function)
-        'object_schema': '(?<=create)\s*(\w+)\s*(IF NOT EXISTS)*\s?((\w*)\.(\w*))',
+        'object_schema': '(?<=create)\s*(OR REPLACE)?\s*(\w+)\s*(IF NOT EXISTS)*\s?((\w*)\.(\w*))',
         # Match Group 2 for distribution key, comma seperated for multiple keys
         'distributed_by': 'distributed by \(.*?\)',
         # Match Group 2 for partition type (range) Group 3 for parition key.
@@ -94,7 +94,7 @@ class SqlDirective(Directive):
             object_details = {}
             if self.obj_schema.findall(contents):
                 sql_type_schema = self.obj_schema.findall(contents)[0]
-                sql_type = (sql_type_schema[0], sql_type_schema[2], sql_type_schema[3], sql_type_schema[4])
+                sql_type = (sql_type_schema[1], sql_type_schema[3], sql_type_schema[4], sql_type_schema[5])
             elif self.obj_cluster_catalog.findall(contents):
                 sql_type_cluster_catalog = self.obj_cluster_catalog.findall(contents)[0]
                 # Create a tuple matching to length of obj_schema

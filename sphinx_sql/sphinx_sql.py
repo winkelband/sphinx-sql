@@ -24,12 +24,21 @@ class SqlDirective(Directive):
 
     # Most of these regex strings should be case insesitive lookups
     closing_regex = '((?=return:)|(?=purpose:)|(?=dependent objects:)|(?=changelog:)|(?=parameters)|(?=\*/))'
+    special_obj_type = [
+        'external',
+        'foreign',
+        'materialized',
+    ]
     regex_dict = {
         # Full comment block
         'top_sql_block_comments': '(?s)/\*.*?\*/',
-        # Match Group 2 for Object Type, Group 3 for Object Name
-        #'object': '^(create\s*or\s*replace\s*|create\s*|create\s*external\s*)(\w*)\s*((\w*)\.(\w*)|(\w*))',
-        'object': '(?<=create)(.*?)((\w*)\.(\w*))',
+        # Match Group 1 for Object Type, Group 3 for Object Name
+        # in cluster and catalog objects (e.g. database, role; extension, schema)
+        'object_cluster_catalog': '(?<=create)\s+(\w+)\s*(if not exists)*\s?(\w+)',
+        # Match Group 2 (a predefined special object type, e.g. "materialized")
+        # and 3 for Object Type, Group 5 for Object Name
+        # in schema objects (e.g. table, view, function)
+        'object_schema': f'''(?<=create)\s*(or replace)?\s*({'|'.join(special_obj_type)})?\s*(\w+)\s*(if not exists)*\s?((\w*)\.(\w*))''',
         # Match Group 2 for distribution key, comma seperated for multiple keys
         'distributed_by': 'distributed by \(.*?\)',
         # Match Group 2 for partition type (range) Group 3 for parition key.
@@ -39,11 +48,6 @@ class SqlDirective(Directive):
         'comments': {
             'object_name': '(?<=Object Name:)(\s\S*)',
             'object_type': '(?<=Object Type:)(\s\S*)',
-            #'parameters': '(?s)(?<=parameters:)(.*?)(?=return:)',
-            #'return_type': 'Return:(.?\w.*)',
-            #'purpose': '(?s)(?<=purpose:)(.*?)((?=dependent objects:)|(?=\*/))',
-            #'dependancies': '(?s)(?<=objects:)(.*?)(?=changelog:)',
-            #changelog': '(?s)(?<=changelog:)(.*?)(?=\*)',
             'parameters': f'(?s)(?<=parameters:)(.*?){closing_regex}',
             'return_type': 'Return:(.?\w.*)',
             'purpose': f'(?s)(?<=purpose:)(.*?){closing_regex}',
@@ -56,7 +60,8 @@ class SqlDirective(Directive):
         regex_dict), object_hook=lambda item: SimpleNamespace(**item))
 
     # Compile Top Level Regex
-    obj = re.compile(regex_strings.object, re.IGNORECASE | re.MULTILINE)
+    obj_cluster_catalog = re.compile(regex_strings.object_cluster_catalog, re.IGNORECASE | re.MULTILINE)
+    obj_schema = re.compile(regex_strings.object_schema, re.IGNORECASE | re.MULTILINE)
     objdist = re.compile(regex_strings.distributed_by,
                          re.IGNORECASE | re.MULTILINE)
     objpart = re.compile(regex_strings.partition_by,
@@ -93,18 +98,18 @@ class SqlDirective(Directive):
             logger.info(file)
             contents = f.read()
             object_details = {}
-            if self.obj.findall(contents):
-                # DDL file
-                sql_type = self.obj.findall(contents)[0]
-
-                if not sql_type[1]:
-                    logger.warning(
-                        "No top level comments found in file. Not a DML file. Skipping {}".format(file))
-                    return None
-                else:
-
+            if self.obj_schema.findall(contents):
+                sql_type_schema = self.obj_schema.findall(contents)[0]
+                sql_type = (f'{sql_type_schema[1]} {sql_type_schema[2]}', sql_type_schema[4], sql_type_schema[5], sql_type_schema[6])
+            elif self.obj_cluster_catalog.findall(contents):
+                sql_type_cluster_catalog = self.obj_cluster_catalog.findall(contents)[0]
+                # Create a tuple matching to length of obj_schema
+                sql_type = (sql_type_cluster_catalog[0], sql_type_cluster_catalog[2], '', '')
+            try:
+                if 'sql_type' in locals():
+                    # DDL file
                     # Read name and type from ANSI92 SQL objects first
-                    object_details['type'] = str(sql_type[0]).upper().replace('OR REPLACE','').strip()
+                    object_details['type'] = str(sql_type[0]).upper().strip()
                     object_details['name'] = str(sql_type[1]).lower().strip()
 
                     if object_details['type'] == 'TABLE':
@@ -121,20 +126,24 @@ class SqlDirective(Directive):
                         object_details['comments'] = self.extract_comments(comment)
                     else:
                         object_details['comments'] = None
-            else:
-                # Likely a DML file
-                dml = self.top_comments.findall(contents)[0]
-                if dml:
-                    oname = self.objname.search(str(dml))
-                    otype = self.objtype.search(str(dml))
-                    if not oname or not otype:
-                        return None
-                    else:
-                        object_details['type'] = otype[0].rstrip('\\n').strip().upper()
-                        object_details['name'] = oname[0].rstrip('\\n').strip().lower()
-                        object_details['comments'] = self.extract_comments(str(dml))
                 else:
-                    return None
+                    # Likely a DML file
+                    dml = self.top_comments.findall(contents)[0]
+                    if dml:
+                        oname = self.objname.search(str(dml))
+                        otype = self.objtype.search(str(dml))
+                        if not oname or not otype:
+                            return None
+                        else:
+                            object_details['type'] = otype[0].rstrip('\\n').strip().upper()
+                            object_details['name'] = oname[0].rstrip('\\n').strip().lower()
+                            object_details['comments'] = self.extract_comments(str(dml))
+                    else:
+                        return None
+            except:
+                logger.warning(
+                    "No top level comments found in file. Not a DML file. Skipping {}".format(file))
+                return None
         object_details = json.loads(json.dumps(object_details), object_hook=lambda item: SimpleNamespace(**item))
         return object_details
 

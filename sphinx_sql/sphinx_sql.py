@@ -189,7 +189,7 @@ class SqlDirective(Directive):
         ns = str(s).replace('\t', '    ')
         return ns
 
-    def build_table(self, tabledata, is_dependant=False):
+    def build_table(self, titles, tabledata, is_dependant=False):
         table = n.table()
         tgroup = n.tgroup()
         tbody = n.tbody()
@@ -199,6 +199,9 @@ class SqlDirective(Directive):
             tgroup += colspec
 
         for tidx, row in enumerate(tabledata):
+            header = n.row()
+            for title in titles:
+                header += n.entry('', n.paragraph(text=title))
             r = n.row()
             for cidx, cell in enumerate(row):
                 entry = n.entry()
@@ -211,6 +214,7 @@ class SqlDirective(Directive):
 
                 r += entry
             tbody += r
+        tgroup +=  n.thead('', header)
         tgroup += tbody
         table += tgroup
         return table
@@ -247,8 +251,12 @@ class SqlDirective(Directive):
             # Parameters block
             section += n.line("","")
             section += n.line("PARAMETERS:","PARAMETERS:")
+            # The first row is treated as table header
             if len(core_text.comments.param) > 1:
-                ptable = self.build_table(core_text.comments.param)
+                ptable = self.build_table(
+                    core_text.comments.param[0],
+                    core_text.comments.param[1:],
+                )
                 section += ptable
             else:
                 section += n.line("None","None")
@@ -269,12 +277,21 @@ class SqlDirective(Directive):
 
         if hasattr(core_text.comments, 'dependancies'):
             section += n.line("DEPENDANT OBJECTS:", "DEPENDANT OBJECTS:")
-            dtable = self.build_table(core_text.comments.dependancies, True)
+            # The first row is treated as table header
+            dtable = self.build_table(
+                core_text.comments.dependancies[0],
+                core_text.comments.dependancies[1:],
+                True
+            )
             section += dtable
 
         if hasattr(core_text.comments, 'changelog'):
             section += n.line("CHANGE LOG:", "CHANGE LOG:")
-            ctable = self.build_table(core_text.comments.changelog)
+            # The first row is treated as table header
+            ctable = self.build_table(
+                core_text.comments.changelog[0],
+                core_text.comments.changelog[1:],
+            )
             section += ctable
 
         return section

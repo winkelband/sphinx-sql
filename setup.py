@@ -19,10 +19,13 @@ setup(
     name=name,
     version=release,
     packages=find_packages(),
-    url='https://github.com/jackscodemonkey/sphinx-sql',
+    url='https://github.com/winkelband/sphinx-sql',
     license='MIT',
-    author='Marcus Robb',
-    description="Sphinx extension for autodoc of SQL files.",
+    author=[
+        'Marcus Robb',
+        'David Berthel'
+    ],
+    description="Sphinx extension for autodoc of SQL files by Marcus Robb. Forked and extended by David Berthel.",
     long_description=long_description,
     long_description_content_type="text/x-rst",
     install_requires=[

@@ -1,7 +1,7 @@
 /*
 Purpose:
 This a new user to show how auto documentation can add new objects quickly.
-It inherits permissions from my_role.
+It inherits permissions from my_test_role.
 Dependent Objects:
     Type    |Name
     Role    |my_test_role

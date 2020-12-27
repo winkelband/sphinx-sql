@@ -428,14 +428,14 @@ class SqlDirective(Directive):
 
         if core_text.type in TABLE_TYPES:
             if hasattr(core_text, 'cols') and len(core_text.cols) > 0:
-                # Fields block
+                # Attributes block
                 section += n.line("ATTRIBUTES:", "ATTRIBUTES:")
                 # The first row is treated as table header
-                ftable = self.build_table(
+                atable = self.build_table(
                     core_text.cols[0],
                     core_text.cols[1:],
                 )
-                section += ftable
+                section += atable
 
         if hasattr(core_text.comments, 'changelog'):
             section += n.line("CHANGE LOG:", "CHANGE LOG:")

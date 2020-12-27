@@ -24,8 +24,7 @@ to genrate single DDL files, which can be handled by sphinx-sql.
 
 **TODO:**
 
-.. include:: docs/source/todo.rst
-    :start-line: 4
+See :code:`docs/source/todo.rst`
 
 
 .. _jackscodemonkey's: https://github.com/jackscodemonkey

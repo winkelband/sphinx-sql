@@ -61,5 +61,5 @@ html_static_path = ['_static']
 
 # -- Options for sphinx-sql --------------------------------------------------
 
-# Disable extraction of Table Columns from DDL.
-sphinxsql_include_table_columns = True
+# Disable extraction of Table Attributes (Columns) from DDL.
+sphinxsql_include_table_attributes = True

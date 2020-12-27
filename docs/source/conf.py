@@ -19,10 +19,10 @@
 
 project = 'Sphinx-SQL'
 copyright = '2020, Marcus Robb'
-author = 'Marcus Robb'
+author = 'Marcus Robb, David Berthel'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+release = '0.2'
 
 
 # -- General configuration ---------------------------------------------------
@@ -57,6 +57,7 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 #html_css_files = ['custom.css']
+
 
 # -- Options for sphinx-sql --------------------------------------------------
 

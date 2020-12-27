@@ -7,6 +7,7 @@ Dependent Objects:
     Schema   |my_test_schema
 ChangeLog:
 	Date    |    Author    |    Ticket    |    Modification
+	2020-12-26    |  Developer_2  |   T-232    |    Add Comment On Columns
 	2020-10-26    |  Developer_2  |   T-220    |    Initial Definition
 */
 CREATE TABLE IF NOT EXISTS my_test_schema.my_test_table (
